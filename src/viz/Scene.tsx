@@ -5,6 +5,7 @@ import type { PlaybackControls } from '../hooks/usePlayback';
 import { GraphEdges } from './GraphEdges';
 import { LayerPlanes } from './LayerPlanes';
 import { NodeCloud } from './NodeCloud';
+import { NodeLabels } from './NodeLabels';
 import { QueryMarker, ResultHalos, ScanSpokes, ScanWavefront, SearchOverlay } from './SearchOverlay';
 import { SceneControls } from './SceneControls';
 import { LAYER_SPACING, palette } from './theme';
@@ -17,6 +18,7 @@ interface SceneProps {
   frame: TimelineFrame | undefined;
   mode: SearchMode;
   showEdges: boolean;
+  showNodeLabels: boolean;
   autoRotate: boolean;
   reducedView: boolean;
 }
@@ -26,7 +28,16 @@ interface SceneProps {
  * simulation output and the current playback frame and hands slices of them to the
  * individual visual layers.
  */
-export function Scene({ simulation, playback, frame, mode, showEdges, autoRotate, reducedView }: SceneProps) {
+export function Scene({
+  simulation,
+  playback,
+  frame,
+  mode,
+  showEdges,
+  showNodeLabels,
+  autoRotate,
+  reducedView,
+}: SceneProps) {
   const { points, index, query, intraLayerEdges, interLayerEdges, metrics } = simulation;
   const timeline = mode === 'hnsw' ? simulation.hnswTimeline : simulation.knnTimeline;
 
@@ -72,6 +83,7 @@ export function Scene({ simulation, playback, frame, mode, showEdges, autoRotate
         activeLayer={activeLayer}
         flatten={flatten}
         showEdges={showEdges}
+        reducedView={reducedView}
       />
 
       <NodeCloud
@@ -86,7 +98,6 @@ export function Scene({ simulation, playback, frame, mode, showEdges, autoRotate
         resultIds={timeline.neighbors}
         flatten={flatten}
         searchStarted={searchStarted}
-        reducedView={reducedView}
       />
 
       {mode === 'hnsw' && (
@@ -99,11 +110,10 @@ export function Scene({ simulation, playback, frame, mode, showEdges, autoRotate
           focusNode={focusNode}
           searchStarted={searchStarted}
           finished={finished}
-          reducedView={reducedView}
         />
       )}
 
-      {mode === 'knn' && !reducedView && (
+      {mode === 'knn' && (
         <>
           <ScanWavefront query={query} radius={frame?.radius ?? 0} visible={searchStarted} />
           <ScanSpokes
@@ -116,16 +126,26 @@ export function Scene({ simulation, playback, frame, mode, showEdges, autoRotate
         </>
       )}
 
-      <QueryMarker
-        query={query}
-        topLayer={metrics.topLayer}
-        flatten={flatten}
-        reducedView={reducedView}
-      />
+      <QueryMarker query={query} topLayer={metrics.topLayer} flatten={flatten} />
 
-      {!reducedView && (
-        <ResultHalos points={points} resultIds={timeline.neighbors} visible={finished} />
-      )}
+      <ResultHalos points={points} resultIds={timeline.neighbors} visible={finished} />
+
+      <NodeLabels
+        points={points}
+        query={query}
+        timeline={timeline}
+        frame={frame}
+        step={playback.step}
+        activeLayer={activeLayer}
+        focusNode={focusNode}
+        entryPointId={index.entryPointId}
+        topLayer={metrics.topLayer}
+        resultIds={timeline.neighbors}
+        flatten={flatten}
+        searchStarted={searchStarted}
+        finished={finished}
+        visible={showNodeLabels}
+      />
 
       <SceneControls orbitHeight={orbitHeight} autoRotate={autoRotate} />
     </Canvas>

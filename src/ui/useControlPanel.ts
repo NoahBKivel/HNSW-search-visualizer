@@ -26,6 +26,7 @@ export interface PanelValues {
   efSearch: number;
   speed: number;
   showEdges: boolean;
+  showNodeLabels: boolean;
   autoRotate: boolean;
   reducedView: boolean;
 }
@@ -95,6 +96,7 @@ export function useControlPanel(actions: PanelActions): PanelValues {
       {
         reducedView: { label: 'reduced view', value: false },
         showEdges: { label: 'show edges', value: true },
+        showNodeLabels: { label: 'node labels', value: true },
         autoRotate: { label: 'auto-orbit', value: false },
       },
       { collapsed: true },

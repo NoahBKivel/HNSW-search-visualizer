@@ -72,6 +72,7 @@ export default function App() {
         frame={frame}
         mode={panel.mode}
         showEdges={panel.showEdges}
+        showNodeLabels={panel.showNodeLabels}
         autoRotate={panel.autoRotate}
         reducedView={panel.reducedView}
       />

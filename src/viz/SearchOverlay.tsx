@@ -18,7 +18,6 @@ interface SearchOverlayProps {
   focusNode: number;
   searchStarted: boolean;
   finished: boolean;
-  reducedView: boolean;
 }
 
 /**
@@ -31,10 +30,6 @@ interface SearchOverlayProps {
  */
 export function SearchOverlay(props: SearchOverlayProps) {
   if (!props.searchStarted) return null;
-
-  if (props.reducedView) {
-    return <HopTrail {...props} reduced />;
-  }
 
   return (
     <group>
@@ -50,7 +45,7 @@ export function SearchOverlay(props: SearchOverlayProps) {
  * Older hops are drawn dim; the most recent one is bright so the eye can follow
  * where the frontier just went.
  */
-function HopTrail({ points, timeline, step, reduced }: SearchOverlayProps & { reduced?: boolean }) {
+function HopTrail({ points, timeline, step }: SearchOverlayProps) {
   const segments = useMemo(() => {
     const taken = timeline.hops.filter((hop) => hop.at <= step);
     return taken
@@ -69,21 +64,13 @@ function HopTrail({ points, timeline, step, reduced }: SearchOverlayProps & { re
 
   if (segments.length < 2) return null;
 
-  const hopColor = reduced ? palette.reducedHop : palette.hop;
-
-  if (reduced) {
-    return (
-      <Line points={segments} segments color={hopColor} lineWidth={2.5} transparent opacity={0.9} />
-    );
-  }
-
   const past = segments.slice(0, -2);
   const latest = segments.slice(-2);
 
   return (
     <>
       {past.length >= 2 && (
-        <Line points={past} segments color={hopColor} lineWidth={2} transparent opacity={0.45} />
+        <Line points={past} segments color={palette.hop} lineWidth={2} transparent opacity={0.45} />
       )}
       {latest.length >= 2 && (
         <Line points={latest} segments color={palette.focus} lineWidth={3.5} transparent opacity={0.95} />
@@ -284,17 +271,16 @@ interface QueryMarkerProps {
   query: Point2D;
   topLayer: number;
   flatten: boolean;
-  reducedView?: boolean;
 }
 
 /**
  * The query itself: one orange octahedron on every layer, stacked at the same
  * (x, y). Same colour on each copy so it reads as one query, not a per-layer node.
  */
-export function QueryMarker({ query, topLayer, flatten, reducedView }: QueryMarkerProps) {
+export function QueryMarker({ query, topLayer, flatten }: QueryMarkerProps) {
   const markersRef = useRef<Group>(null);
   const layers = flatten ? [0] : Array.from({ length: topLayer + 1 }, (_, i) => i);
-  const size = reducedView ? 0.5 : 0.65;
+  const size = 0.65;
   const columnTop = flatten ? 0.5 : (topLayer + 0.2) * LAYER_SPACING;
 
   useFrame((state) => {
@@ -324,21 +310,19 @@ export function QueryMarker({ query, topLayer, flatten, reducedView }: QueryMark
         })}
       </group>
 
-      {!reducedView && (
-        <Line
-          points={[
-            [query.x, query.y, 0],
-            [query.x, query.y, columnTop],
-          ]}
-          color={palette.query}
-          lineWidth={1}
-          dashed
-          dashSize={0.4}
-          gapSize={0.35}
-          transparent
-          opacity={0.4}
-        />
-      )}
+      <Line
+        points={[
+          [query.x, query.y, 0],
+          [query.x, query.y, columnTop],
+        ]}
+        color={palette.query}
+        lineWidth={1}
+        dashed
+        dashSize={0.4}
+        gapSize={0.35}
+        transparent
+        opacity={0.4}
+      />
     </group>
   );
 }

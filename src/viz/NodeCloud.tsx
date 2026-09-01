@@ -3,10 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Color, type InstancedMesh, Object3D } from 'three';
 import type { Timeline } from '../algorithms/playback';
 import type { Point2D } from '../algorithms/types';
-import { layerColor, palette, toWorld } from './theme';
-
-/** How many events a node stays "hot" for after being evaluated. */
-const PULSE_EVENTS = 14;
+import { NODE_PULSE_EVENTS, setNodeColor, toWorld } from './theme';
 
 interface NodeCloudProps {
   points: readonly Point2D[];
@@ -21,7 +18,6 @@ interface NodeCloudProps {
   /** KNN mode: collapse the hierarchy so only the flat base layer is visible. */
   flatten: boolean;
   searchStarted: boolean;
-  reducedView: boolean;
 }
 
 /**
@@ -43,7 +39,6 @@ export function NodeCloud({
   resultIds,
   flatten,
   searchStarted,
-  reducedView,
 }: NodeCloudProps) {
   const meshRef = useRef<InstancedMesh>(null);
 
@@ -82,8 +77,9 @@ export function NodeCloud({
   const resultSet = useMemo(() => new Set(resultIds), [resultIds]);
 
   const scratchObject = useMemo(() => new Object3D(), []);
-  const scratchColor = useMemo(() => new Color(), []);
   const targetColor = useMemo(() => new Color(), []);
+
+  const finished = timeline.length > 0 && step >= timeline.length - 1;
 
   useFrame((_, delta) => {
     const mesh = meshRef.current;
@@ -99,43 +95,31 @@ export function NodeCloud({
 
       const touchedAt = firstTouch[instance.nodeId] ?? Number.POSITIVE_INFINITY;
       const touched = searchStarted && touchedAt <= step;
+      const heat = touched ? Math.max(0, 1 - (step - touchedAt) / NODE_PULSE_EVENTS) : 0;
 
       let scale = 0.2 + instance.layer * 0.03;
-      targetColor.set(reducedView ? palette.reducedNode : layerColor(instance.layer));
 
-      if (reducedView) {
-        if (touched) targetColor.set(palette.reducedSearched);
-        if (hiddenByFlatten) scale = 0;
-      } else {
-        const heat = touched ? Math.max(0, 1 - (step - touchedAt) / PULSE_EVENTS) : 0;
+      setNodeColor(targetColor, {
+        nodeId: instance.nodeId,
+        layer: instance.layer,
+        activeLayer,
+        step,
+        firstTouch,
+        searchStarted,
+        finished,
+        focusNode,
+        entryPointId,
+        topLayer,
+        flatten,
+        resultIds: resultSet,
+      });
 
-        if (touched) {
-          targetColor.set(palette.visited).lerp(scratchColor.set(palette.probing), heat);
-          scale = 0.3 + heat * 0.22;
-        }
-
-        if (resultSet.has(instance.nodeId) && instance.layer === 0 && timeline.length - 1 <= step) {
-          targetColor.set(palette.result);
-          scale = 0.52;
-        }
-
-        if (searchStarted && instance.nodeId === focusNode && onActiveLayer) {
-          targetColor.set(palette.focus);
-          scale = 0.62;
-        }
-
-        if (!searchStarted && instance.nodeId === entryPointId && instance.layer === topLayer) {
-          targetColor.set(palette.entry);
-          scale = 0.5;
-        }
-
-        if (!flatten && !onActiveLayer && searchStarted) {
-          targetColor.multiplyScalar(0.45);
-          scale *= 0.75;
-        }
-
-        if (hiddenByFlatten) scale = 0;
-      }
+      if (touched) scale = 0.24 + heat * 0.08;
+      if (resultSet.has(instance.nodeId) && instance.layer === 0 && finished) scale = 0.32;
+      if (searchStarted && instance.nodeId === focusNode && onActiveLayer) scale = 0.36;
+      if (!searchStarted && instance.nodeId === entryPointId && instance.layer === topLayer) scale = 0.28;
+      if (!flatten && !onActiveLayer && searchStarted) scale *= 0.75;
+      if (hiddenByFlatten) scale = 0;
 
       scales.current[i]! += (scale - scales.current[i]!) * ease;
       const eased = scales.current[i]!;

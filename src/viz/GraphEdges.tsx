@@ -14,6 +14,7 @@ interface GraphEdgesProps {
   /** Collapse to the base layer only — the KNN baseline sees no graph structure. */
   flatten: boolean;
   showEdges: boolean;
+  reducedView: boolean;
 }
 
 /**
@@ -36,6 +37,7 @@ export function GraphEdges({
   activeLayer,
   flatten,
   showEdges,
+  reducedView,
 }: GraphEdgesProps) {
   const byLayer = useMemo(() => {
     const buckets: LayerEdge[][] = Array.from({ length: topLayer + 1 }, () => []);
@@ -44,6 +46,9 @@ export function GraphEdges({
     }
     return buckets;
   }, [intraLayerEdges, topLayer]);
+
+  const inactiveOpacity = reducedView ? 0.10 : 0.22;
+  const interOpacity = reducedView ? 0.12 : 0.35;
 
   return (
     <group>
@@ -55,13 +60,13 @@ export function GraphEdges({
           points={points}
           // Brute force has no graph to walk, so the hierarchy is hidden entirely in
           // that mode rather than merely dimmed — the absence is the point.
-          targetOpacity={!showEdges || flatten ? 0 : layer === activeLayer ? 0.50 : 0.22}
+          targetOpacity={!showEdges || flatten ? 0 : layer === activeLayer ? 0.50 : inactiveOpacity}
         />
       ))}
       <InterLayerEdges
         points={points}
         edges={interLayerEdges}
-        targetOpacity={showEdges && !flatten ? 0.35 : 0}
+        targetOpacity={showEdges && !flatten ? interOpacity : 0}
       />
     </group>
   );

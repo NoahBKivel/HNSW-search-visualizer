@@ -35,12 +35,6 @@ export const palette = {
   intraEdge: '#2a3f6b',
   interEdge: '#7c3aed',
   knnScan: '#0ea5e9',
-  /** Reduced view: uniform node colour before the search reaches them. */
-  reducedNode: '#4b6bb5',
-  /** Reduced view: nodes whose distance to the query has been computed. */
-  reducedSearched: '#38bdf8',
-  /** Reduced view: greedy hops taken during the walk. */
-  reducedHop: '#f472b6',
 } as const;
 
 /** Distinct colour per hierarchy layer, used for nodes, planes and labels alike. */
@@ -54,4 +48,78 @@ export function layerColor(layer: number): Color {
 /** Hex string form of {@link layerColor}, for DOM overlays. */
 export function layerColorCss(layer: number): string {
   return `#${layerColor(layer).getHexString()}`;
+}
+
+/** How many events a node stays "hot" for after being evaluated. */
+export const NODE_PULSE_EVENTS = 14;
+
+export interface NodeColorParams {
+  nodeId: number;
+  layer: number;
+  activeLayer: number;
+  step: number;
+  firstTouch: Float64Array;
+  searchStarted: boolean;
+  finished: boolean;
+  focusNode: number;
+  entryPointId: number;
+  topLayer: number;
+  flatten: boolean;
+  resultIds: ReadonlySet<number>;
+}
+
+/**
+ * Writes the same colour NodeCloud uses for an instanced sphere. Priority order
+ * mirrors the render loop so labels and points always match.
+ */
+export function setNodeColor(target: Color, params: NodeColorParams): void {
+  const {
+    nodeId,
+    layer,
+    activeLayer,
+    step,
+    firstTouch,
+    searchStarted,
+    finished,
+    focusNode,
+    entryPointId,
+    topLayer,
+    flatten,
+    resultIds,
+  } = params;
+
+  const onActiveLayer = layer === activeLayer;
+  target.set(layerColor(layer));
+
+  const touchedAt = firstTouch[nodeId] ?? Number.POSITIVE_INFINITY;
+  const touched = searchStarted && touchedAt <= step;
+
+  if (touched) {
+    target.set(palette.probing);
+  }
+
+  if (resultIds.has(nodeId) && layer === 0 && finished) {
+    target.set(palette.result);
+  }
+
+  if (searchStarted && nodeId === focusNode && onActiveLayer) {
+    target.set(palette.focus);
+  }
+
+  // The graph entry stays purple on the top layer for the whole run — a fixed
+  // landmark even after the search has touched it and moved on.
+  if (nodeId === entryPointId && layer === topLayer && !flatten) {
+    target.set(palette.entry);
+  }
+
+  if (!flatten && !onActiveLayer && searchStarted) {
+    target.multiplyScalar(0.45);
+  }
+}
+
+/** DOM-friendly form of {@link setNodeColor}. */
+export function nodeColorCss(params: NodeColorParams): string {
+  const color = new Color();
+  setNodeColor(color, params);
+  return `#${color.getHexString()}`;
 }
