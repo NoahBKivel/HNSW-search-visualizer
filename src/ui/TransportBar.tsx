@@ -1,10 +1,13 @@
-import type { TimelineFrame } from '../algorithms/playback';
+import { useId, useState } from 'react';
+import type { Timeline, TimelineFrame } from '../algorithms/playback';
 import type { PlaybackControls } from '../hooks/usePlayback';
 import type { SearchMode } from '../viz/Scene';
 import { layerColorCss, palette } from '../viz/theme';
+import { describeStepDetail } from './stepDetail';
 
 interface TransportBarProps {
   playback: PlaybackControls;
+  timeline: Timeline;
   frame: TimelineFrame | undefined;
   mode: SearchMode;
   topLayer: number;
@@ -15,8 +18,11 @@ interface TransportBarProps {
  * step. This is where the algorithm is explained in words while the scene shows it
  * in geometry.
  */
-export function TransportBar({ playback, frame, mode, topLayer }: TransportBarProps) {
+export function TransportBar({ playback, timeline, frame, mode, topLayer }: TransportBarProps) {
   const { step, length, playing } = playback;
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const detailsId = useId();
+  const detail = describeStepDetail(timeline, step, mode);
 
   return (
     <section className="panel panel--transport">
@@ -65,8 +71,28 @@ export function TransportBar({ playback, frame, mode, topLayer }: TransportBarPr
           </span>
         )}
 
-        <p>{frame?.caption ?? 'Press play to run a query.'}</p>
+        <p className="transport__caption-text">{frame?.caption ?? 'Press play to run a query.'}</p>
+
+        {detail && (
+          <button
+            type="button"
+            className={`transport__details-toggle ${detailsOpen ? 'transport__details-toggle--open' : ''}`}
+            onClick={() => setDetailsOpen((open) => !open)}
+            aria-expanded={detailsOpen}
+            aria-controls={detailsId}
+            title={detailsOpen ? 'Hide step details' : 'Show step details'}
+          >
+            details
+          </button>
+        )}
       </div>
+
+      {detailsOpen && detail && (
+        <div className="transport__details" id={detailsId}>
+          <p className="transport__details-label">{detail.focusLabel}</p>
+          <p className="transport__details-body">{detail.body}</p>
+        </div>
+      )}
     </section>
   );
 }

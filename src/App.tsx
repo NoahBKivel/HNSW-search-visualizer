@@ -110,6 +110,7 @@ export default function App() {
 
       <TransportBar
         playback={playback}
+        timeline={timeline}
         frame={frame}
         mode={panel.mode}
         topLayer={simulation.metrics.topLayer}
