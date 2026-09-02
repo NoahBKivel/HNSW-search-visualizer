@@ -20,6 +20,15 @@ export interface TimelineEdge {
   readonly at: number;
 }
 
+/** A vertical drop between two consecutive layers along the search path. */
+export interface TimelineDescent {
+  readonly node: number;
+  readonly fromLayer: number;
+  readonly toLayer: number;
+  /** Event index at which this descent occurs. */
+  readonly at: number;
+}
+
 /** Per-step scalar state. Cheap enough to precompute one per event. */
 export interface TimelineFrame {
   readonly at: number;
@@ -46,6 +55,8 @@ export interface Timeline {
   readonly touchDist: Float64Array;
   /** Greedy hops: the spine of the HNSW walk. */
   readonly hops: readonly TimelineEdge[];
+  /** Layer drops: vertical segments between consecutive layers the search descended. */
+  readonly descents: readonly TimelineDescent[];
   /** Probes: every neighbour link whose distance was evaluated. */
   readonly probes: readonly TimelineEdge[];
   /** Final answer ids, best-first. */
@@ -56,6 +67,7 @@ export function buildTimeline(trace: SearchTrace, nodeCount: number): Timeline {
   const firstTouch = new Float64Array(nodeCount).fill(Number.POSITIVE_INFINITY);
   const touchDist = new Float64Array(nodeCount).fill(Number.NaN);
   const hops: TimelineEdge[] = [];
+  const descents: TimelineDescent[] = [];
   const probes: TimelineEdge[] = [];
   const frames: TimelineFrame[] = [];
 
@@ -105,6 +117,12 @@ export function buildTimeline(trace: SearchTrace, nodeCount: number): Timeline {
       case 'descend': {
         layer = event.toLayer;
         focus = event.node;
+        descents.push({
+          node: event.node,
+          fromLayer: event.fromLayer,
+          toLayer: event.toLayer,
+          at,
+        });
         caption = event.note;
         break;
       }
@@ -136,6 +154,7 @@ export function buildTimeline(trace: SearchTrace, nodeCount: number): Timeline {
     firstTouch,
     touchDist,
     hops,
+    descents,
     probes,
     neighbors: trace.neighbors,
   };

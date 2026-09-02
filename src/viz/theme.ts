@@ -34,6 +34,8 @@ export const palette = {
   entry: '#e879f9',
   intraEdge: '#2a3f6b',
   interEdge: '#7c3aed',
+  /** Vertical segment drawn when the search drops between layers. */
+  descent: '#9333ea',
   knnScan: '#0ea5e9',
 } as const;
 

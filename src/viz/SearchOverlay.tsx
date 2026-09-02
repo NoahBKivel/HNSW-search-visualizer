@@ -35,6 +35,7 @@ export function SearchOverlay(props: SearchOverlayProps) {
     <group>
       <ProbeFan {...props} />
       <HopTrail {...props} />
+      <DescentTrail {...props} />
       {!props.finished && <TravellingPulse {...props} />}
     </group>
   );
@@ -74,6 +75,43 @@ function HopTrail({ points, timeline, step }: SearchOverlayProps) {
       )}
       {latest.length >= 2 && (
         <Line points={latest} segments color={palette.focus} lineWidth={3.5} transparent opacity={0.95} />
+      )}
+    </>
+  );
+}
+
+/**
+ * Vertical drops between layers: one segment per descend event, spanning only
+ * the two layers involved — not the full height of the stack.
+ */
+function DescentTrail({ points, timeline, step }: SearchOverlayProps) {
+  const segments = useMemo(() => {
+    const taken = timeline.descents.filter((descent) => descent.at <= step);
+    return taken
+      .map((descent) => {
+        const point = points[descent.node];
+        if (!point) return null;
+        return [toWorld(point, descent.fromLayer), toWorld(point, descent.toLayer)] as [
+          [number, number, number],
+          [number, number, number],
+        ];
+      })
+      .filter((s): s is NonNullable<typeof s> => s !== null)
+      .flat();
+  }, [points, timeline, step]);
+
+  if (segments.length < 2) return null;
+
+  const past = segments.slice(0, -2);
+  const latest = segments.slice(-2);
+
+  return (
+    <>
+      {past.length >= 2 && (
+        <Line points={past} segments color={palette.descent} lineWidth={2} transparent opacity={0.5} />
+      )}
+      {latest.length >= 2 && (
+        <Line points={latest} segments color={palette.descent} lineWidth={3} transparent opacity={0.95} />
       )}
     </>
   );

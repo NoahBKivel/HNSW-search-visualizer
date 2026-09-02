@@ -12,6 +12,7 @@ const FULL_EDGE_KEYS = [
   { color: palette.intraEdge, label: 'intra-layer link (navigable)', hideInReduced: true },
   { color: palette.interEdge, label: 'inter-layer promotion', hideInReduced: true },
   { color: palette.hop, label: 'greedy hop taken' },
+  { color: palette.descent, label: 'layer descent (search path)' },
 ];
 
 interface LegendProps {
