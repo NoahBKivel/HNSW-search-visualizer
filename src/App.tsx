@@ -10,7 +10,6 @@ import { useControlPanel } from './ui/useControlPanel';
 import { Scene } from './viz/Scene';
 
 export default function App() {
-  const [datasetSeed, setDatasetSeed] = useState(1);
   const [querySeed, setQuerySeed] = useState(11);
 
   // The control panel is declared before playback exists, so its transport buttons
@@ -19,7 +18,6 @@ export default function App() {
 
   const panel = useControlPanel({
     newQuery: useCallback(() => setQuerySeed((seed) => seed + 1), []),
-    regenerateDataset: useCallback(() => setDatasetSeed((seed) => seed + 1), []),
     restart: useCallback(() => playbackRef.current?.restart(), []),
     togglePlay: useCallback(() => playbackRef.current?.toggle(), []),
     stepForward: useCallback(() => playbackRef.current?.stepForward(), []),
@@ -33,13 +31,13 @@ export default function App() {
     () => ({
       pointCount: panel.pointCount,
       distribution: panel.distribution,
-      datasetSeed,
+      datasetSeed: panel.seed,
       M: panel.M,
       mL: panel.mL,
       maxLayers: panel.maxLayers,
       efConstruction: panel.efConstruction,
     }),
-    [panel.pointCount, panel.distribution, panel.M, panel.mL, panel.maxLayers, panel.efConstruction, datasetSeed],
+    [panel.pointCount, panel.distribution, panel.seed, panel.M, panel.mL, panel.maxLayers, panel.efConstruction],
   );
 
   const appliedStructural = useDebouncedValue(structural, 160);

@@ -1,12 +1,15 @@
 import { button, folder, useControls } from 'leva';
 import { useEffect, useRef } from 'react';
-import { suggestedML } from '../algorithms/hnsw';
 import type { Distribution } from '../algorithms/dataset';
+import { suggestedML } from '../algorithms/hnsw';
+import { randomUint32 } from '../algorithms/random';
 import type { SearchMode } from '../viz/Scene';
+
+/** Picked once per page load so Strict Mode remounts keep the same cloud. */
+const INITIAL_DATASET_SEED = randomUint32();
 
 export interface PanelActions {
   newQuery: () => void;
-  regenerateDataset: () => void;
   restart: () => void;
   togglePlay: () => void;
   stepForward: () => void;
@@ -16,6 +19,7 @@ export interface PanelActions {
 export interface PanelValues {
   pointCount: number;
   distribution: Distribution;
+  seed: number;
   mode: SearchMode;
   M: number;
   autoML: boolean;
@@ -41,6 +45,7 @@ export interface PanelValues {
 export function useControlPanel(actions: PanelActions): PanelValues {
   const actionsRef = useRef(actions);
   actionsRef.current = actions;
+  const setSeedRef = useRef<((partial: { seed: number }) => void) | null>(null);
 
   const [values, set] = useControls(() => ({
     Dataset: folder(
@@ -51,7 +56,10 @@ export function useControlPanel(actions: PanelActions): PanelValues {
           value: 'uniform' as Distribution,
           options: { uniform: 'uniform', clustered: 'clustered' } as const,
         },
-        'shuffle points': button(() => actionsRef.current.regenerateDataset()),
+        seed: { label: 'seed', value: INITIAL_DATASET_SEED, step: 1 },
+        'shuffle points': button(() => {
+          setSeedRef.current?.({ seed: randomUint32() });
+        }),
       },
       { collapsed: false },
     ),
@@ -102,6 +110,8 @@ export function useControlPanel(actions: PanelActions): PanelValues {
       { collapsed: true },
     ),
   }));
+
+  setSeedRef.current = set;
 
   const { M, autoML } = values;
 

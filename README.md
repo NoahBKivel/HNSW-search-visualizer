@@ -52,6 +52,8 @@ The floating Leva panel in the top-right corner is draggable by its title bar.
 | --- | --- |
 | **points** | dataset size (20–2500) |
 | **layout** | uniform, or six Gaussian clusters |
+| **seed** | integer that fully determines the point cloud (and HNSW level assignment). Each page load picks a random seed and shows it; type a previous seed to recreate that layout. The same seed always yields the same uniform cloud and the same clustered cloud |
+| **shuffle points** | picks a new random seed and rebuilds the cloud |
 | **M** | max links per element per layer. Higher `M` means a denser, more navigable graph and a more expensive index |
 | **auto m_L** | derive `m_L = 1/ln(M)`, the value the paper recommends |
 | **m_L** | level generation multiplier — the knob that decides how aggressively points get promoted upward |

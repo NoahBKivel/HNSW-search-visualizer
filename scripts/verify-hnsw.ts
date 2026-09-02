@@ -14,6 +14,7 @@ import { generateDataset } from '../src/algorithms/dataset';
 import { HnswIndex, suggestedML } from '../src/algorithms/hnsw';
 import { bruteForceKnn, recall } from '../src/algorithms/knn';
 import { buildTimeline } from '../src/algorithms/playback';
+import { randomUint32 } from '../src/algorithms/random';
 import { distance, type Point2D } from '../src/algorithms/types';
 
 let failures = 0;
@@ -152,6 +153,32 @@ for (const scenario of scenarios) {
     shouldBeFaster ? 'cheaper than brute force' : 'cost recorded',
     !shouldBeFaster || speedup > 1,
     `${(hnswCost / QUERIES).toFixed(0)} vs ${(knnCost / QUERIES).toFixed(0)} distances/query (${speedup.toFixed(1)}x)`,
+  );
+}
+
+function samePoints(a: Point2D[], b: Point2D[]): boolean {
+  return a.length === b.length && a.every((p, i) => p.id === b[i]!.id && p.x === b[i]!.x && p.y === b[i]!.y);
+}
+
+// --- Dataset seeds: the same number must always rebuild the same cloud ------
+console.log('\ndataset seed reproducibility');
+{
+  const uniformA = generateDataset({ count: 100, seed: 42, distribution: 'uniform' });
+  const uniformB = generateDataset({ count: 100, seed: 42, distribution: 'uniform' });
+  const uniformOther = generateDataset({ count: 100, seed: 43, distribution: 'uniform' });
+  const clusteredA = generateDataset({ count: 100, seed: 42, distribution: 'clustered' });
+  const clusteredB = generateDataset({ count: 100, seed: 42, distribution: 'clustered' });
+
+  check('same seed + uniform yields identical points', samePoints(uniformA, uniformB));
+  check('different seed yields a different uniform cloud', !samePoints(uniformA, uniformOther));
+  check('same seed + clustered yields identical points', samePoints(clusteredA, clusteredB));
+  check('same seed uniform vs clustered differ', !samePoints(uniformA, clusteredA));
+
+  const samples = [randomUint32(), randomUint32(), randomUint32()];
+  check(
+    'randomUint32 returns unsigned 32-bit integers',
+    samples.every((n) => Number.isInteger(n) && n >= 0 && n <= 0xffffffff),
+    samples.join(', '),
   );
 }
 
